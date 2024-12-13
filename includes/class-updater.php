@@ -161,31 +161,39 @@ class KulaHub_GF_Updater {
             return $result;
         }
 
-        if (!empty($args->slug)) {
-            if ($args->slug == current(explode('/', $this->basename))) {
-                $this->get_repository_info();
-
-                $plugin = array(
-                    'name'              => $this->plugin["Name"],
-                    'slug'              => $this->basename,
-                    'version'           => $this->github_response->tag_name,
-                    'author'            => $this->plugin["AuthorName"],
-                    'author_profile'    => $this->plugin["AuthorURI"],
-                    'last_updated'      => $this->github_response->published_at,
-                    'homepage'          => $this->plugin["PluginURI"],
-                    'short_description' => $this->plugin["Description"],
-                    'sections'          => array(
-                        'Description'   => $this->plugin["Description"],
-                        'Updates'       => $this->github_response->body,
-                    ),
-                    'download_link'     => $this->github_response->zipball_url
-                );
-
-                return (object) $plugin;
-            }
+        if (!isset($args->slug)) {
+            return $result;
         }
 
-        return $result;
+        $plugin_slug = current(explode('/', $this->basename));
+        
+        if ($args->slug !== $plugin_slug) {
+            return $result;
+        }
+
+        $this->get_repository_info();
+
+        if (!$this->github_response) {
+            return $result;
+        }
+
+        $plugin = array(
+            'name'              => $this->plugin["Name"] ?? '',
+            'slug'              => $this->basename,
+            'version'           => $this->github_response->tag_name ?? '',
+            'author'            => $this->plugin["AuthorName"] ?? '',
+            'author_profile'    => $this->plugin["AuthorURI"] ?? '',
+            'last_updated'      => $this->github_response->published_at ?? '',
+            'homepage'          => $this->plugin["PluginURI"] ?? '',
+            'short_description' => $this->plugin["Description"] ?? '',
+            'sections'          => array(
+                'Description'   => $this->plugin["Description"] ?? '',
+                'Updates'       => $this->github_response->body ?? '',
+            ),
+            'download_link'     => $this->github_response->zipball_url ?? ''
+        );
+
+        return (object) $plugin;
     }
 
     public function after_install($response, $hook_extra, $result) {
