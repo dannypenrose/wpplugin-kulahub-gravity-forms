@@ -3,7 +3,7 @@
  * Plugin Name: KulaHub Integration for Gravity Forms
  * Plugin URI: https://github.com/dannypenrose/wpplugin-kulahub-gravity-forms
  * Description: Integrates Gravity Forms with KulaHub CRM
- * Version: 1.1.2
+ * Version: 1.1.3
  * Author: Danny Penrose
  * Author URI: https://kulahub.com
  * License: GPL v2 or later
@@ -36,7 +36,7 @@ if (!defined('WPINC')) {
 }
 
 // Plugin version.
-define('KULAHUB_GF_VERSION', '1.1.2');
+define('KULAHUB_GF_VERSION', '1.1.3');
 define('KULAHUB_GF_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('KULAHUB_GF_PLUGIN_URL', plugin_dir_url(__FILE__));
 
@@ -154,4 +154,29 @@ function kulahub_gf_check_requirements() {
         });
     }
 }
-add_action('admin_init', 'kulahub_gf_check_requirements'); 
+add_action('admin_init', 'kulahub_gf_check_requirements');
+
+// Add PHP version check
+if (version_compare(PHP_VERSION, '7.4', '<')) {
+    add_action('admin_notices', function() {
+        ?>
+        <div class="error notice">
+            <p><?php _e('KulaHub Integration requires PHP 7.4 or higher.', 'kulahub-gf'); ?></p>
+        </div>
+        <?php
+    });
+    return;
+}
+
+// Add WordPress version check
+if (version_compare($GLOBALS['wp_version'], '5.0', '<')) {
+    add_action('admin_notices', function() {
+        ?>
+        <div class="error notice">
+            <p><?php _e('KulaHub Integration requires WordPress 5.0 or higher.', 'kulahub-gf'); ?></p>
+        </div>
+        <?php
+    });
+    return;
+}
+  
