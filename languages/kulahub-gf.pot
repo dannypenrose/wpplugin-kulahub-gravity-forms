@@ -1,0 +1,103 @@
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: KulaHub Integration for Gravity Forms 1.0.1\n"
+"Report-Msgid-Bugs-To: https://github.com/dannypenrose/wpplugin-kulahub-gravity-forms/issues\n"
+"POT-Creation-Date: 2024-01-01 12:00+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: includes/class-admin.php:20
+msgid "KulaHub Settings"
+msgstr ""
+
+#: includes/class-admin.php:21
+msgid "KulaHub"
+msgstr ""
+
+#: includes/class-admin.php:47
+msgid "API Key"
+msgstr ""
+
+#: includes/class-admin.php:65
+msgid "Invalid API key format"
+msgstr ""
+
+#: includes/class-admin.php:65
+msgid "API request failed"
+msgstr ""
+
+#: includes/class-admin.php:65
+msgid "Rate limit exceeded"
+msgstr ""
+
+#: includes/class-api.php:45
+msgid "KulaHub API key is not configured"
+msgstr ""
+
+#: includes/class-api.php:52
+msgid "Rate limit exceeded"
+msgstr ""
+
+#: includes/class-api.php:89
+msgid "Unknown API error"
+msgstr ""
+
+#: includes/class-api.php:123
+msgid "Invalid API key"
+msgstr ""
+
+#: includes/class-failed-submissions.php:34
+msgid "Failed KulaHub Submissions"
+msgstr ""
+
+#: includes/class-failed-submissions.php:42
+msgid "Entry ID"
+msgstr ""
+
+#: includes/class-failed-submissions.php:43
+msgid "Form"
+msgstr ""
+
+#: includes/class-failed-submissions.php:44
+msgid "Error"
+msgstr ""
+
+#: includes/class-failed-submissions.php:45
+msgid "Retry Count"
+msgstr ""
+
+#: includes/class-failed-submissions.php:46
+msgid "Last Retry"
+msgstr ""
+
+#: includes/class-failed-submissions.php:47
+msgid "Actions"
+msgstr ""
+
+#: includes/class-failed-submissions.php:60
+msgid "Retry"
+msgstr ""
+
+#: includes/class-gravity-forms.php:89
+msgid "KulaHub Field ID"
+msgstr ""
+
+#: includes/class-gravity-forms.php:90
+msgid "Enter the KulaHub field ID for this field"
+msgstr ""
+
+#: includes/class-gravity-forms.php:120
+msgid "KulaHub Form ID"
+msgstr ""
+
+#: includes/class-gravity-forms.php:121
+msgid "KulaHub Client ID"
+msgstr ""
+
+# Add all other translatable strings 
