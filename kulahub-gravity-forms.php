@@ -3,7 +3,7 @@
  * Plugin Name: KulaHub Integration for Gravity Forms
  * Plugin URI: https://github.com/dannypenrose/wpplugin-kulahub-gravity-forms
  * Description: Integrates Gravity Forms with KulaHub CRM
- * Version: 1.1.0
+ * Version: 1.1.1
  * Author: Danny Penrose
  * Author URI: https://kulahub.com
  * License: GPL v2 or later
@@ -36,7 +36,7 @@ if (!defined('WPINC')) {
 }
 
 // Plugin version.
-define('KULAHUB_GF_VERSION', '1.1.0');
+define('KULAHUB_GF_VERSION', '1.1.1');
 define('KULAHUB_GF_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('KULAHUB_GF_PLUGIN_URL', plugin_dir_url(__FILE__));
 

@@ -8,9 +8,9 @@ class KulaHub_GF_Updater {
     private $basename;
     private $active;
     private $github_response;
-    private $github_url = 'https://github.com/dannypenrose/kulahub-gravity-forms';
+    private $github_url = 'https://github.com/dannypenrose/wpplugin-kulahub-gravity-forms';
     private $github_username = 'dannypenrose';
-    private $github_repo = 'kulahub-gravity-forms';
+    private $github_repo = 'wpplugin-kulahub-gravity-forms';
 
     public function __construct($file) {
         $this->file = $file;
@@ -35,53 +35,122 @@ class KulaHub_GF_Updater {
 
     private function get_repository_info() {
         if (is_null($this->github_response)) {
-            $request_uri = sprintf('https://api.github.com/repos/%s/%s/releases/latest', 
+            $request_uri = sprintf('https://api.github.com/repos/%s/%s/releases', 
                 $this->github_username, $this->github_repo);
 
-            $response = wp_remote_get($request_uri);
+            $args = array(
+                'headers' => array(
+                    'Accept' => 'application/vnd.github.v3+json',
+                    'User-Agent' => 'WordPress/' . get_bloginfo('version'),
+                    'Cache-Control' => 'no-cache'
+                ),
+                'timeout' => 15,
+                'sslverify' => true
+            );
+
+            error_log('KulaHub GF Updater: Making request to: ' . $request_uri);
+
+            $response = wp_remote_get($request_uri, $args);
 
             if (is_wp_error($response)) {
-                error_log('GitHub API Error: ' . $response->get_error_message());
+                error_log('KulaHub GF Updater Error: ' . $response->get_error_message());
                 return false;
             }
 
+            $response_code = wp_remote_retrieve_response_code($response);
             $body = wp_remote_retrieve_body($response);
-            error_log('GitHub API Response: ' . $body);
+            
+            error_log('KulaHub GF Updater: Response Code: ' . $response_code);
+            error_log('KulaHub GF Updater: Response Body: ' . $body);
 
-            $response = json_decode($body);
-
-            if ($response) {
-                $this->github_response = $response;
+            if ($response_code !== 200) {
+                error_log('KulaHub GF Updater: Non-200 response code received: ' . $response_code);
+                return false;
             }
+
+            $releases = json_decode($body);
+
+            if (!is_array($releases) || empty($releases)) {
+                error_log('KulaHub GF Updater: No releases found or invalid response format');
+                return false;
+            }
+
+            // Get the latest release
+            $this->github_response = $releases[0];
+            
+            error_log('KulaHub GF Updater: Successfully retrieved release data');
+            error_log('KulaHub GF Updater: Tag name: ' . $this->github_response->tag_name);
         }
+        
+        return true;
     }
 
     public function modify_transient($transient) {
-        if (property_exists($transient, 'checked')) {
-            if ($checked = $transient->checked) {
-                $this->get_repository_info();
+        if (!property_exists($transient, 'checked')) {
+            return $transient;
+        }
 
-                if (!$this->github_response) {
-                    return $transient;
-                }
+        if (!($checked = $transient->checked)) {
+            return $transient;
+        }
 
-                $out_of_date = version_compare(
-                    $this->github_response->tag_name,
-                    $checked[$this->basename],
-                    'gt'
-                );
+        error_log('KulaHub GF Updater: Checking for updates...');
+        error_log('KulaHub GF Updater: Current versions: ' . wp_json_encode($checked));
 
-                if ($out_of_date) {
-                    $plugin = array(
-                        'url' => $this->github_url,
-                        'slug' => current(explode('/', $this->basename)),
-                        'package' => $this->github_response->zipball_url,
-                        'new_version' => $this->github_response->tag_name
-                    );
+        // Get repository info and handle failure
+        if (!$this->get_repository_info()) {
+            error_log('KulaHub GF Updater: Failed to get repository info');
+            return $transient;
+        }
 
-                    $transient->response[$this->basename] = (object) $plugin;
-                }
-            }
+        if (!$this->github_response) {
+            error_log('KulaHub GF Updater: No valid GitHub response available');
+            return $transient;
+        }
+
+        // Ensure we have the required properties
+        if (!isset($this->github_response->tag_name) || !isset($this->github_response->zipball_url)) {
+            error_log('KulaHub GF Updater: Missing required properties in GitHub response');
+            error_log('KulaHub GF Updater: Available properties: ' . print_r(get_object_vars($this->github_response), true));
+            return $transient;
+        }
+
+        // Clean up version strings
+        $current_version = isset($checked[$this->basename]) ? $checked[$this->basename] : '0.0.0';
+        $latest_version = str_replace(
+            array('v', 'V', 'version', 'Version', ' '), 
+            '', 
+            $this->github_response->tag_name
+        );
+
+        error_log('KulaHub GF Updater: Comparing versions:');
+        error_log('KulaHub GF Updater: Current version: ' . $current_version);
+        error_log('KulaHub GF Updater: Latest version: ' . $latest_version);
+
+        // Ensure we have valid version strings
+        if (empty($latest_version)) {
+            error_log('KulaHub GF Updater: Invalid latest version string');
+            return $transient;
+        }
+
+        $out_of_date = version_compare($latest_version, $current_version, 'gt');
+        error_log('KulaHub GF Updater: Update needed? ' . ($out_of_date ? 'Yes' : 'No'));
+
+        if ($out_of_date) {
+            error_log('KulaHub GF Updater: Building update object...');
+            
+            $plugin = array(
+                'url' => $this->github_url,
+                'slug' => current(explode('/', $this->basename)),
+                'package' => $this->github_response->zipball_url,
+                'new_version' => $latest_version,
+                'tested' => '6.4.3',
+                'requires' => '5.0',
+                'requires_php' => '7.4'
+            );
+
+            error_log('KulaHub GF Updater: Update object created: ' . wp_json_encode($plugin));
+            $transient->response[$this->basename] = (object) $plugin;
         }
 
         return $transient;
