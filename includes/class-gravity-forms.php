@@ -146,7 +146,7 @@ class KulaHub_GF_Integration {
 
         // Send to API
         $api = new KulaHub_GF_API();
-        $api->send_form_data($form_data);
+        $api->send_data($form_data, $form['id'], $entry['id']);
     }
 
     /**
