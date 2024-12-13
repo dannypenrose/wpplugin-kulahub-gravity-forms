@@ -1,6 +1,51 @@
 # KulaHub Integration for Gravity Forms
 
-This WordPress plugin integrates Gravity Forms with KulaHub CRM, allowing you to automatically send form submissions to your KulaHub account.
+This WordPress plugin integrates [Gravity Forms](https://www.gravityforms.com/) with [KulaHub CRM](https://kulahub.com), allowing you to automatically send form submissions to your KulaHub account.
+
+## Features
+
+### Form Integration
+- Map Gravity Forms fields to KulaHub fields
+- Support for all standard field types
+- Custom field mapping for specialized KulaHub fields
+- Automatic handling of checkbox and multi-select fields
+- Form-specific KulaHub form ID and client ID configuration
+
+### Data Management
+- Failed submission tracking and retry system
+- Rate limiting (30 requests per minute)
+- Comprehensive error logging
+- Data sanitization and validation
+- GDPR compliance tools for data export/erasure
+
+### Security
+- API key encryption
+- Security headers implementation
+- Protected log files
+- XSS protection
+- Input sanitization
+
+### Administration
+- User-friendly settings interface
+- Connection testing tool
+- Failed submissions management interface
+- Detailed error logging
+- Translation ready
+
+### Developer Features
+- Extensive hook system
+- Comprehensive unit testing suite
+- Developer documentation
+- Custom field mapping API
+- Rate limiting controls
+- Error handling system
+
+## Requirements
+
+- WordPress 5.0 or higher
+- [Gravity Forms](https://www.gravityforms.com/) 2.4 or higher
+- PHP 7.4 or higher
+- Active [KulaHub](https://kulahub.com) account with API access
 
 ## Installation
 
@@ -10,22 +55,23 @@ This WordPress plugin integrates Gravity Forms with KulaHub CRM, allowing you to
 4. Activate the plugin
 5. Go to Settings > KulaHub to configure your API key
 
-## Requirements
-
-- WordPress 5.0 or higher
-- Gravity Forms 2.4 or higher
-- PHP 7.4 or higher
-
 ## Configuration
 
-1. Obtain your API key from your KulaHub account
+1. Obtain your API key from your [KulaHub account](https://kulahub.com)
 2. Navigate to Settings > KulaHub in your WordPress admin
 3. Enter your API key and save changes
 4. Edit your Gravity Forms to configure KulaHub field mappings
+5. Set form-specific KulaHub form ID and client ID
 
-## Updates
+## Developer Documentation
 
-The plugin includes automatic updates. When a new version is released, you'll see the update notification in your WordPress admin panel under Updates or Plugins.
+See the [developer documentation](docs/developer.md) for information about:
+- Available hooks and filters
+- Custom field mapping
+- API integration
+- Error handling
+- Rate limiting
+- Testing
 
 ## Support
 
@@ -35,24 +81,12 @@ For support, please [open an issue](https://github.com/dannypenrose/wpplugin-kul
 
 This plugin is licensed under the GPL v2 or later.
 
-## Changelog
+## Privacy
 
-### 1.1.0
-- Added comprehensive unit testing suite
-- Implemented GDPR compliance with data export/erasure tools
-- Added rate limiting for API calls (30 requests per minute)
-- Improved error logging system
-- Added privacy policy content
-- Added security headers
-- Added translation support
-- Added developer documentation
-- Added proper data sanitization and validation
-- Added failed submissions retry functionality
+This plugin:
+- Sends form submission data to KulaHub CRM
+- Stores failed submissions in the WordPress database
+- Provides data export and erasure tools for GDPR compliance
+- Includes privacy policy content suggestions
 
-### 1.0.1
-- Added automatic updates from GitHub
-- Improved error handling
-- Added password protection for API key field
-
-### 1.0.0
-- Initial release
+For more information about KulaHub's privacy policy, visit [KulaHub's Privacy Policy](https://kulahub.com/privacy).
