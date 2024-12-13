@@ -115,16 +115,30 @@ class KulaHub_GF_Integration {
      * Handle form submission
      */
     public function handle_form_submission($entry, $form) {
+        error_log('KulaHub GF: Form submission started');
+        error_log('KulaHub GF: Form ID: ' . $form['id']);
+        error_log('KulaHub GF: Full form settings: ' . print_r($form, true));
+        error_log('KulaHub GF: Entry: ' . print_r($entry, true));
+
         $form_data = array();
         $contact_data = array();
 
-        // Get form and client IDs
-        $form_data['formTypeId'] = rgar($form, 'formid');
-        $form_data['clientId'] = rgar($form, 'clientid');
+        // Get form and client IDs - check both old and new setting names
+        $form_data['formTypeId'] = rgar($form, 'formid') ?: rgar($form, 'kulahubFormId');
+        $form_data['clientId'] = rgar($form, 'clientid') ?: rgar($form, 'kulahubClientId');
+
+        error_log('KulaHub GF: Form Type ID: ' . $form_data['formTypeId']);
+        error_log('KulaHub GF: Client ID: ' . $form_data['clientId']);
+
+        if (empty($form_data['formTypeId']) || empty($form_data['clientId'])) {
+            error_log('KulaHub GF: Missing required form settings (formTypeId or clientId)');
+            return;
+        }
 
         // Process form fields
         foreach ($form['fields'] as $field) {
             if (isset($field['encryptField'])) {
+                error_log('KulaHub GF: Processing field - ' . print_r($field, true));
                 $field_key = $field['encryptField'];
                 $field_value = $this->get_field_value($field, $entry);
 

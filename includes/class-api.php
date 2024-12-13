@@ -11,7 +11,7 @@ class KulaHub_GF_API {
      *
      * @var string
      */
-    private $api_endpoint = 'https://api.kulahub.com/v1';
+    private $api_endpoint = 'https://kulahub-api.azurewebsites.net/api/Forms/addFormEntry';
 
     /**
      * API key
@@ -44,7 +44,32 @@ class KulaHub_GF_API {
      * @return array|WP_Error Response array or WP_Error on failure
      */
     public function send_data($data, $form_id, $entry_id) {
+        // Debug logging
+        error_log('KulaHub GF: Attempting to send data');
+        error_log('KulaHub GF: API Endpoint: ' . $this->api_endpoint);
+        
+        // Add DNS check
+        $host = parse_url($this->api_endpoint, PHP_URL_HOST);
+        if (!$host) {
+            error_log('KulaHub GF: Invalid API endpoint URL');
+            return new WP_Error(
+                'invalid_endpoint',
+                __('Invalid API endpoint URL', 'kulahub-gf')
+            );
+        }
+
+        // Check if DNS resolution works
+        $dns_check = gethostbyname($host);
+        if ($dns_check === $host) {
+            error_log('KulaHub GF: DNS resolution failed for ' . $host);
+            return new WP_Error(
+                'dns_resolution_failed',
+                sprintf(__('Could not resolve API host: %s', 'kulahub-gf'), $host)
+            );
+        }
+
         if (empty($this->api_key)) {
+            error_log('KulaHub GF: API key is missing');
             return new WP_Error(
                 'missing_api_key',
                 __('KulaHub API key is not configured', 'kulahub-gf'),
@@ -61,20 +86,19 @@ class KulaHub_GF_API {
         }
 
         $response = wp_remote_post(
-            $this->api_endpoint . '/submissions',
+            $this->api_endpoint . '/?x-api-key=' . $this->api_key,
             array(
                 'headers' => array(
-                    'Authorization' => 'Bearer ' . $this->api_key,
-                    'Content-Type'  => 'application/json',
-                    'Accept'        => 'application/json',
-                    'User-Agent'    => 'KulaHub-GF/' . KULAHUB_GF_VERSION,
+                    'Content-Type' => 'application/json'
                 ),
                 'body'    => wp_json_encode($data),
                 'timeout' => 30,
+                'sslverify' => true
             )
         );
 
         if (is_wp_error($response)) {
+            error_log('KulaHub GF: API request failed - ' . $response->get_error_message());
             $this->log_error($response->get_error_message(), $data, $form_id, $entry_id);
             $this->failed_submissions->add_failed_submission($form_id, $entry_id, $response->get_error_message());
             return $response;
@@ -82,6 +106,9 @@ class KulaHub_GF_API {
 
         $response_code = wp_remote_retrieve_response_code($response);
         $response_body = json_decode(wp_remote_retrieve_body($response), true);
+
+        error_log('KulaHub GF: API response code: ' . $response_code);
+        error_log('KulaHub GF: API response body: ' . wp_remote_retrieve_body($response));
 
         if ($response_code !== 200) {
             $error_message = isset($response_body['message']) 
@@ -166,7 +193,7 @@ class KulaHub_GF_API {
         $log_file = $logs_dir . '/api-errors-' . date('Y-m-d') . '.log';
 
         if (wp_mkdir_p($logs_dir)) {
-            file_put_contents($log_file, $log_file, FILE_APPEND);
+            file_put_contents($log_file, $log_entry, FILE_APPEND);
         }
     }
 
@@ -185,5 +212,42 @@ class KulaHub_GF_API {
         
         set_transient($transient_key, $rate_count + 1, MINUTE_IN_SECONDS);
         return false;
+    }
+
+    /**
+     * Test API connection
+     *
+     * @return bool|WP_Error
+     */
+    public function test_connection() {
+        if (empty($this->api_key)) {
+            return new WP_Error(
+                'missing_api_key',
+                __('KulaHub API key is not configured', 'kulahub-gf')
+            );
+        }
+
+        // Test connection using the actual endpoint
+        $response = wp_remote_get(
+            $this->api_endpoint . '/?x-api-key=' . $this->api_key,
+            array(
+                'timeout' => 15,
+                'sslverify' => true,
+            )
+        );
+
+        if (is_wp_error($response)) {
+            return $response;
+        }
+
+        $response_code = wp_remote_retrieve_response_code($response);
+        if ($response_code === 405) {  // Method Not Allowed means the endpoint exists but doesn't accept GET
+            return true;  // This is actually good - means we found the endpoint
+        }
+        
+        return new WP_Error(
+            'connection_failed',
+            sprintf(__('API connection test failed with status: %s', 'kulahub-gf'), $response_code)
+        );
     }
 } 

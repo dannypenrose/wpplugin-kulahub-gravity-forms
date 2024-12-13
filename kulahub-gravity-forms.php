@@ -139,4 +139,19 @@ function kulahub_gf_security_headers() {
     header('X-Frame-Options: SAMEORIGIN');
     header('X-XSS-Protection: 1; mode=block');
 }
-add_action('send_headers', 'kulahub_gf_security_headers'); 
+add_action('send_headers', 'kulahub_gf_security_headers');
+
+function kulahub_gf_check_requirements() {
+    $api_key = get_option('kulahub_api_key');
+    
+    if (empty($api_key)) {
+        add_action('admin_notices', function() {
+            ?>
+            <div class="error notice">
+                <p><?php _e('KulaHub Integration requires an API key to be configured. Please go to Settings > KulaHub to set up your API key.', 'kulahub-gf'); ?></p>
+            </div>
+            <?php
+        });
+    }
+}
+add_action('admin_init', 'kulahub_gf_check_requirements'); 

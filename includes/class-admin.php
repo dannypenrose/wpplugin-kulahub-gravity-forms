@@ -47,12 +47,36 @@ class KulaHub_GF_Admin {
             wp_die(__('You do not have sufficient permissions to access this page.', 'kulahub-gf'));
         }
 
-        // Add nonce for security
-        wp_nonce_field('kulahub_settings_action', 'kulahub_settings_nonce');
+        // Handle test connection
+        if (isset($_POST['test_connection']) && check_admin_referer('kulahub_test_connection')) {
+            $api = new KulaHub_GF_API();
+            $test_result = $api->test_connection();
+            
+            if (is_wp_error($test_result)) {
+                add_settings_error(
+                    'kulahub_settings',
+                    'connection_test',
+                    $test_result->get_error_message(),
+                    'error'
+                );
+            } else {
+                add_settings_error(
+                    'kulahub_settings',
+                    'connection_test',
+                    __('Connection test successful', 'kulahub-gf'),
+                    'success'
+                );
+            }
+        }
+
+        // Show any settings errors
+        settings_errors('kulahub_settings');
         
         ?>
         <div class="wrap">
             <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
+            
+            <!-- API Key Settings Form -->
             <form action="options.php" method="post">
                 <?php
                 settings_fields('kulahub_settings');
@@ -71,6 +95,12 @@ class KulaHub_GF_Admin {
                     </tr>
                 </table>
                 <?php submit_button(); ?>
+            </form>
+
+            <!-- Test Connection Form -->
+            <form action="" method="post">
+                <?php wp_nonce_field('kulahub_test_connection'); ?>
+                <?php submit_button(__('Test Connection', 'kulahub-gf'), 'secondary', 'test_connection'); ?>
             </form>
         </div>
         <?php
