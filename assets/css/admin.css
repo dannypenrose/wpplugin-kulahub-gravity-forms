@@ -1,0 +1,31 @@
+/**
+ * KulaHub Admin CSS
+ */
+.api-key-row td {
+    padding: 10px 5px;
+}
+
+#kulahub-api-keys-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 15px;
+}
+
+#kulahub-api-keys-table th {
+    text-align: left;
+    padding: 8px 5px;
+    border-bottom: 1px solid #ddd;
+}
+
+#kulahub-api-keys-table td {
+    padding: 8px 5px;
+    vertical-align: middle;
+}
+
+button.remove-key {
+    margin-right: 10px !important;
+}
+
+#add-api-key {
+    margin-bottom: 20px;
+} 

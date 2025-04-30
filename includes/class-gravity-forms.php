@@ -48,6 +48,13 @@ class KulaHub_GF_Integration {
      * Add custom form settings
      */
     public function add_custom_form_settings($fields, $form) {
+        // Get API keys
+        $api = new KulaHub_GF_API();
+        $api_key_options = $api->get_api_keys_options();
+        
+        // Add default empty option
+        $api_key_options = array_merge(array('' => __('Select an account', 'kulahub-gf')), $api_key_options);
+        
         $custom_fields = array(
             array(
                 'name'          => 'formid',
@@ -63,6 +70,15 @@ class KulaHub_GF_Integration {
                 'label'         => __('KulaHub Client ID', 'kulahub-gf'),
                 'default_value' => rgar($form, 'clientid'),
             ),
+            array(
+                'name'          => 'kulahub_api_key_id',
+                'type'          => 'select',
+                'choices'       => $this->format_api_key_choices($api_key_options),
+                'class'         => 'medium',
+                'label'         => __('KulaHub Account', 'kulahub-gf'),
+                'tooltip'       => __('Select which KulaHub account to use for this form', 'kulahub-gf'),
+                'default_value' => rgar($form, 'kulahub_api_key_id'),
+            ),
         );
 
         $form_basics_index = array_search('Form Basics', array_column($fields, 'title'));
@@ -77,11 +93,28 @@ class KulaHub_GF_Integration {
     }
 
     /**
+     * Format API key choices for select field
+     */
+    private function format_api_key_choices($api_keys) {
+        $choices = array();
+        
+        foreach ($api_keys as $id => $name) {
+            $choices[] = array(
+                'label' => $name,
+                'value' => $id
+            );
+        }
+        
+        return $choices;
+    }
+
+    /**
      * Save custom form settings
      */
     public function save_custom_form_settings($form) {
-        $form['kulahubFormId'] = rgpost('kulahubFormId');
-        $form['kulahubClientId'] = rgpost('kulahubClientId');
+        $form['kulahubFormId'] = rgpost('formid');
+        $form['kulahubClientId'] = rgpost('clientid');
+        $form['kulahub_api_key_id'] = rgpost('kulahub_api_key_id');
         return $form;
     }
 
@@ -126,9 +159,11 @@ class KulaHub_GF_Integration {
         // Get form and client IDs - check both old and new setting names
         $form_data['formTypeId'] = rgar($form, 'formid') ?: rgar($form, 'kulahubFormId');
         $form_data['clientId'] = rgar($form, 'clientid') ?: rgar($form, 'kulahubClientId');
+        $api_key_id = rgar($form, 'kulahub_api_key_id');
 
         error_log('KulaHub GF: Form Type ID: ' . $form_data['formTypeId']);
         error_log('KulaHub GF: Client ID: ' . $form_data['clientId']);
+        error_log('KulaHub GF: API Key ID: ' . $api_key_id);
 
         if (empty($form_data['formTypeId']) || empty($form_data['clientId'])) {
             error_log('KulaHub GF: Missing required form settings (formTypeId or clientId)');
@@ -158,9 +193,9 @@ class KulaHub_GF_Integration {
         // Add contact data to form data
         $form_data['Contact'] = $contact_data;
 
-        // Send to API
+        // Send to API using the selected API key
         $api = new KulaHub_GF_API();
-        $api->send_data($form_data, $form['id'], $entry['id']);
+        $api->send_data($form_data, $form['id'], $entry['id'], $api_key_id);
     }
 
     /**

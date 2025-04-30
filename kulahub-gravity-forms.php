@@ -3,7 +3,7 @@
  * Plugin Name: KulaHub Integration for Gravity Forms
  * Plugin URI: https://github.com/dannypenrose/wpplugin-kulahub-gravity-forms
  * Description: Integrates Gravity Forms with KulaHub CRM
- * Version: 1.1.3
+ * Version: 1.2.0
  * Author: Danny Penrose
  * Author URI: https://kulahub.com
  * License: GPL v2 or later
@@ -36,7 +36,7 @@ if (!defined('WPINC')) {
 }
 
 // Plugin version.
-define('KULAHUB_GF_VERSION', '1.1.3');
+define('KULAHUB_GF_VERSION', '1.2.0');
 define('KULAHUB_GF_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('KULAHUB_GF_PLUGIN_URL', plugin_dir_url(__FILE__));
 
@@ -86,8 +86,51 @@ function kulahub_gf_activate() {
 
     // Add a version option for future updates
     add_option('kulahub_gf_version', KULAHUB_GF_VERSION);
+
+    // Migrate API key if needed
+    kulahub_gf_migrate_api_key();
 }
 register_activation_hook(__FILE__, 'kulahub_gf_activate');
+
+/**
+ * Migrate from single API key to multiple API keys
+ */
+function kulahub_gf_migrate_api_key() {
+    $api_keys = get_option('kulahub_api_keys', array());
+    
+    if (empty($api_keys)) {
+        $old_api_key = get_option('kulahub_api_key');
+        
+        if (!empty($old_api_key)) {
+            // Create a new API key entry
+            $api_keys['key-' . time()] = array(
+                'name' => __('Default Account', 'kulahub-gf'),
+                'key' => $old_api_key
+            );
+            
+            // Save the new API keys option
+            update_option('kulahub_api_keys', $api_keys);
+            
+            // Don't delete the old key yet to ensure backward compatibility
+        }
+    }
+}
+
+/**
+ * Handle updates
+ */
+function kulahub_gf_handle_updates() {
+    $current_version = get_option('kulahub_gf_version', '1.0.0');
+    
+    if (version_compare($current_version, '1.2.0', '<')) {
+        // Migrate API key for updates
+        kulahub_gf_migrate_api_key();
+        
+        // Update version
+        update_option('kulahub_gf_version', KULAHUB_GF_VERSION);
+    }
+}
+add_action('admin_init', 'kulahub_gf_handle_updates');
 
 /**
  * Deactivation hook
@@ -142,13 +185,14 @@ function kulahub_gf_security_headers() {
 add_action('send_headers', 'kulahub_gf_security_headers');
 
 function kulahub_gf_check_requirements() {
-    $api_key = get_option('kulahub_api_key');
+    $api_keys = get_option('kulahub_api_keys', array());
+    $old_api_key = get_option('kulahub_api_key');
     
-    if (empty($api_key)) {
+    if (empty($api_keys) && empty($old_api_key)) {
         add_action('admin_notices', function() {
             ?>
             <div class="error notice">
-                <p><?php _e('KulaHub Integration requires an API key to be configured. Please go to Settings > KulaHub to set up your API key.', 'kulahub-gf'); ?></p>
+                <p><?php _e('KulaHub Integration requires at least one API key to be configured. Please go to Settings > KulaHub to set up your API key.', 'kulahub-gf'); ?></p>
             </div>
             <?php
         });
