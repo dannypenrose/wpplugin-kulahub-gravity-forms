@@ -55,6 +55,18 @@ class KulaHub_GF_Integration {
         // Add default empty option
         $api_key_options = array_merge(array('' => __('Select an account', 'kulahub-gf')), $api_key_options);
         
+        // Get currently selected API key or the first available key
+        $selected_api_key = rgar($form, 'kulahub_api_key_id');
+        
+        // If no key is selected and we have keys available, use the first one
+        if (empty($selected_api_key) && !empty($api_key_options) && count($api_key_options) > 1) {
+            // Get first non-empty key (skip the empty option we added)
+            $keys = array_keys($api_key_options);
+            if (isset($keys[1])) { // Index 1 is the first actual key (index 0 is the empty option)
+                $selected_api_key = $keys[1];
+            }
+        }
+        
         $custom_fields = array(
             array(
                 'name'          => 'formid',
@@ -77,7 +89,7 @@ class KulaHub_GF_Integration {
                 'class'         => 'medium',
                 'label'         => __('KulaHub Account', 'kulahub-gf'),
                 'tooltip'       => __('Select which KulaHub account to use for this form', 'kulahub-gf'),
-                'default_value' => rgar($form, 'kulahub_api_key_id'),
+                'default_value' => $selected_api_key,
             ),
         );
 
@@ -112,9 +124,15 @@ class KulaHub_GF_Integration {
      * Save custom form settings
      */
     public function save_custom_form_settings($form) {
-        $form['kulahubFormId'] = rgpost('formid');
-        $form['kulahubClientId'] = rgpost('clientid');
+        // Get the posted values
+        $form['formid'] = rgpost('formid');
+        $form['clientid'] = rgpost('clientid');
         $form['kulahub_api_key_id'] = rgpost('kulahub_api_key_id');
+        
+        // For backwards compatibility
+        $form['kulahubFormId'] = $form['formid'];
+        $form['kulahubClientId'] = $form['clientid'];
+        
         return $form;
     }
 
@@ -168,6 +186,19 @@ class KulaHub_GF_Integration {
         if (empty($form_data['formTypeId']) || empty($form_data['clientId'])) {
             error_log('KulaHub GF: Missing required form settings (formTypeId or clientId)');
             return;
+        }
+
+        // If no API key is specified, try to get the first available one
+        if (empty($api_key_id)) {
+            $api = new KulaHub_GF_API();
+            $api_keys = $api->get_api_keys_options();
+            if (!empty($api_keys)) {
+                $keys = array_keys($api_keys);
+                if (isset($keys[0])) {
+                    $api_key_id = $keys[0];
+                    error_log('KulaHub GF: No API key specified, using first available: ' . $api_key_id);
+                }
+            }
         }
 
         // Process form fields
