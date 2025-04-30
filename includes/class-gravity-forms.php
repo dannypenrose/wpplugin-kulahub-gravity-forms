@@ -48,6 +48,10 @@ class KulaHub_GF_Integration {
      * Add custom form settings
      */
     public function add_custom_form_settings($fields, $form) {
+        // Log the current form data
+        error_log('KulaHub GF: add_custom_form_settings called');
+        error_log('KulaHub GF: Current form data: ' . print_r($form, true));
+        
         // Get API keys
         $api = new KulaHub_GF_API();
         $api_key_options = $api->get_api_keys_options();
@@ -57,6 +61,7 @@ class KulaHub_GF_Integration {
         
         // Get currently selected API key or the first available key
         $selected_api_key = rgar($form, 'kulahub_api_key_id');
+        error_log('KulaHub GF: Selected API key from form: ' . $selected_api_key);
         
         // If no key is selected and we have keys available, use the first one
         if (empty($selected_api_key) && !empty($api_key_options) && count($api_key_options) > 1) {
@@ -64,43 +69,60 @@ class KulaHub_GF_Integration {
             $keys = array_keys($api_key_options);
             if (isset($keys[1])) { // Index 1 is the first actual key (index 0 is the empty option)
                 $selected_api_key = $keys[1];
+                error_log('KulaHub GF: Using first available key: ' . $selected_api_key);
             }
         }
         
+        // Make sure we use the correct field names that match our form fields
         $custom_fields = array(
             array(
                 'name'          => 'formid',
                 'type'          => 'text',
                 'class'         => 'medium',
+                'required'      => false,
                 'label'         => __('KulaHub Form ID', 'kulahub-gf'),
-                'default_value' => rgar($form, 'formid'),
+                'tooltip'       => __('Enter the KulaHub Form ID', 'kulahub-gf'),
+                'default_value' => rgar($form, 'formid') ?: rgar($form, 'kulahubFormId'),
             ),
             array(
                 'name'          => 'clientid',
                 'type'          => 'text',
                 'class'         => 'medium',
+                'required'      => false,
                 'label'         => __('KulaHub Client ID', 'kulahub-gf'),
-                'default_value' => rgar($form, 'clientid'),
+                'tooltip'       => __('Enter the KulaHub Client ID', 'kulahub-gf'),
+                'default_value' => rgar($form, 'clientid') ?: rgar($form, 'kulahubClientId'),
             ),
             array(
                 'name'          => 'kulahub_api_key_id',
                 'type'          => 'select',
                 'choices'       => $this->format_api_key_choices($api_key_options),
                 'class'         => 'medium',
+                'required'      => false,
                 'label'         => __('KulaHub Account', 'kulahub-gf'),
                 'tooltip'       => __('Select which KulaHub account to use for this form', 'kulahub-gf'),
                 'default_value' => $selected_api_key,
             ),
         );
 
+        // Add to the Form Basics section if it exists
         $form_basics_index = array_search('Form Basics', array_column($fields, 'title'));
         if ($form_basics_index !== false) {
+            error_log('KulaHub GF: Found Form Basics section at index ' . $form_basics_index);
             $fields[$form_basics_index]['fields'] = array_merge(
                 (array) $fields[$form_basics_index]['fields'], 
                 $custom_fields
             );
+        } else {
+            // If Form Basics section doesn't exist, create a new section
+            error_log('KulaHub GF: Form Basics section not found, creating new section');
+            $fields[] = array(
+                'title'  => 'KulaHub Integration',
+                'fields' => $custom_fields
+            );
         }
 
+        error_log('KulaHub GF: Returning fields: ' . print_r($fields, true));
         return $fields;
     }
 
@@ -124,15 +146,35 @@ class KulaHub_GF_Integration {
      * Save custom form settings
      */
     public function save_custom_form_settings($form) {
-        // Get the posted values
-        $form['formid'] = rgpost('formid');
-        $form['clientid'] = rgpost('clientid');
-        $form['kulahub_api_key_id'] = rgpost('kulahub_api_key_id');
+        // Debug what data is coming in
+        error_log('KulaHub GF: Saving form settings');
+        error_log('KulaHub GF: Posted data: ' . print_r($_POST, true));
+        error_log('KulaHub GF: Current form data: ' . print_r($form, true));
+
+        // Get the posted values - these must match exactly what Gravity Forms is expecting
+        $form_settings = array(
+            'formid',
+            'clientid',
+            'kulahub_api_key_id'
+        );
+        
+        foreach ($form_settings as $setting) {
+            if (isset($_POST[$setting])) {
+                $form[$setting] = rgpost($setting);
+                error_log('KulaHub GF: Setting ' . $setting . ' to ' . $form[$setting]);
+            }
+        }
         
         // For backwards compatibility
-        $form['kulahubFormId'] = $form['formid'];
-        $form['kulahubClientId'] = $form['clientid'];
+        if (isset($form['formid'])) {
+            $form['kulahubFormId'] = $form['formid'];
+        }
         
+        if (isset($form['clientid'])) {
+            $form['kulahubClientId'] = $form['clientid'];
+        }
+        
+        error_log('KulaHub GF: Returning form data: ' . print_r($form, true));
         return $form;
     }
 
@@ -168,19 +210,35 @@ class KulaHub_GF_Integration {
     public function handle_form_submission($entry, $form) {
         error_log('KulaHub GF: Form submission started');
         error_log('KulaHub GF: Form ID: ' . $form['id']);
-        error_log('KulaHub GF: Full form settings: ' . print_r($form, true));
-        error_log('KulaHub GF: Entry: ' . print_r($entry, true));
+        error_log('KulaHub GF: Form settings: ' . json_encode($form));
 
         $form_data = array();
         $contact_data = array();
 
-        // Get form and client IDs - check both old and new setting names
-        $form_data['formTypeId'] = rgar($form, 'formid') ?: rgar($form, 'kulahubFormId');
-        $form_data['clientId'] = rgar($form, 'clientid') ?: rgar($form, 'kulahubClientId');
+        // Check all possible field names for Form ID and Client ID
+        $form_id_fields = array('formid', 'kulahubFormId', 'formTypeId');
+        $client_id_fields = array('clientid', 'kulahubClientId', 'clientId');
+        
+        // Get Form ID
+        foreach ($form_id_fields as $field) {
+            if (!empty(rgar($form, $field))) {
+                $form_data['formTypeId'] = rgar($form, $field);
+                error_log('KulaHub GF: Found Form ID in field: ' . $field . ' = ' . $form_data['formTypeId']);
+                break;
+            }
+        }
+        
+        // Get Client ID
+        foreach ($client_id_fields as $field) {
+            if (!empty(rgar($form, $field))) {
+                $form_data['clientId'] = rgar($form, $field);
+                error_log('KulaHub GF: Found Client ID in field: ' . $field . ' = ' . $form_data['clientId']);
+                break;
+            }
+        }
+        
+        // Get API Key ID
         $api_key_id = rgar($form, 'kulahub_api_key_id');
-
-        error_log('KulaHub GF: Form Type ID: ' . $form_data['formTypeId']);
-        error_log('KulaHub GF: Client ID: ' . $form_data['clientId']);
         error_log('KulaHub GF: API Key ID: ' . $api_key_id);
 
         if (empty($form_data['formTypeId']) || empty($form_data['clientId'])) {
@@ -203,10 +261,10 @@ class KulaHub_GF_Integration {
 
         // Process form fields
         foreach ($form['fields'] as $field) {
-            if (isset($field['encryptField'])) {
-                error_log('KulaHub GF: Processing field - ' . print_r($field, true));
+            if (isset($field['encryptField']) && !empty($field['encryptField'])) {
                 $field_key = $field['encryptField'];
                 $field_value = $this->get_field_value($field, $entry);
+                error_log('KulaHub GF: Processing field - ' . $field_key . ' = ' . $field_value);
 
                 if ($this->is_contact_field($field_key)) {
                     $contact_data[$field_key] = $field_value;
@@ -215,7 +273,7 @@ class KulaHub_GF_Integration {
                 }
 
                 // Handle email subscribe specially
-                if ($field_key == 'emailsubscribe') {
+                if (strtolower($field_key) == 'emailsubscribe') {
                     $form_data[$field_key] = !empty($field_value);
                 }
             }
@@ -223,10 +281,17 @@ class KulaHub_GF_Integration {
 
         // Add contact data to form data
         $form_data['Contact'] = $contact_data;
+        error_log('KulaHub GF: Final form data: ' . json_encode($form_data));
 
         // Send to API using the selected API key
         $api = new KulaHub_GF_API();
-        $api->send_data($form_data, $form['id'], $entry['id'], $api_key_id);
+        $result = $api->send_data($form_data, $form['id'], $entry['id'], $api_key_id);
+        
+        if (is_wp_error($result)) {
+            error_log('KulaHub GF: API request failed - ' . $result->get_error_message());
+        } else {
+            error_log('KulaHub GF: API request successful');
+        }
     }
 
     /**
