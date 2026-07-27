@@ -60,8 +60,8 @@ This WordPress plugin integrates [Gravity Forms](https://www.gravityforms.com/) 
 1. Obtain your API key from your [KulaHub account](https://kulahub.com)
 2. Navigate to Settings > KulaHub in your WordPress admin
 3. Enter your API key and save changes
-4. Edit your Gravity Forms to configure KulaHub field mappings
-5. Set form-specific KulaHub form ID and client ID
+4. Set form-specific KulaHub form ID and client ID in form settings
+5. Edit your Gravity Form fields to configure KulaHub field mappings - use the form defaults such as firtname, lastname, or form custom field personalisation code (without hashtags); for example varchar1, money1, number1.
 
 ## Developer Documentation
 
