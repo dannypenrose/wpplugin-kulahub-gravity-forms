@@ -8,8 +8,8 @@ class KulaHub_GF_Updater {
     private $basename;
     private $active;
     private $github_response;
-    private $github_url = 'https://github.com/dannypenrose/wpplugin-kulahub-gravity-forms';
-    private $github_username = 'dannypenrose';
+    private $github_url = 'https://github.com/Converta-Agency/wpplugin-kulahub-gravity-forms';
+    private $github_username = 'Converta-Agency';
     private $github_repo = 'wpplugin-kulahub-gravity-forms';
 
     public function __construct($file) {

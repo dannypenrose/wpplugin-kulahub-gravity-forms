@@ -263,8 +263,15 @@ class KulaHub_GF_Integration {
         foreach ($form['fields'] as $field) {
             if (isset($field['encryptField']) && !empty($field['encryptField'])) {
                 $field_key = $field['encryptField'];
-                $field_value = $this->get_field_value($field, $entry);
-                error_log('KulaHub GF: Processing field - ' . $field_key . ' = ' . $field_value);
+                $is_email_subscribe = strtolower($field_key) === 'emailsubscribe';
+
+                // KulaHub stores emailsubscribe as a Boolean, so it must be resolved
+                // to true or false rather than passed through as a string.
+                $field_value = $is_email_subscribe
+                    ? $this->get_email_subscribe_value($field, $entry)
+                    : $this->get_field_value($field, $entry);
+
+                error_log('KulaHub GF: Processing field - ' . $field_key . ' = ' . $this->format_value_for_log($field_value));
 
                 if ($this->is_contact_field($field_key)) {
                     $contact_data[$field_key] = $field_value;
@@ -272,9 +279,9 @@ class KulaHub_GF_Integration {
                     $form_data[$field_key] = $field_value;
                 }
 
-                // Handle email subscribe specially
-                if (strtolower($field_key) == 'emailsubscribe') {
-                    $form_data[$field_key] = !empty($field_value);
+                // emailsubscribe is also mirrored at the top level of the payload.
+                if ($is_email_subscribe) {
+                    $form_data[$field_key] = $field_value;
                 }
             }
         }
@@ -298,6 +305,19 @@ class KulaHub_GF_Integration {
      * Get field value based on field type
      */
     private function get_field_value($field, $entry) {
+        $value = $this->get_raw_field_value($field, $entry);
+
+        if ($field['type'] === 'checkbox') {
+            return $value;
+        }
+
+        return ucwords(strtolower($value));
+    }
+
+    /**
+     * Get the entry value for a field without any presentation formatting
+     */
+    private function get_raw_field_value($field, $entry) {
         if ($field['type'] === 'checkbox') {
             $checkbox_values = array();
             foreach ($field['inputs'] as $input) {
@@ -308,9 +328,87 @@ class KulaHub_GF_Integration {
             }
             return implode(', ', $checkbox_values);
         }
-        
-        $value = rgar($entry, $field['id']);
-        return ucwords(strtolower($value));
+
+        return rgar($entry, $field['id']);
+    }
+
+    /**
+     * Resolve the emailsubscribe field to a Boolean
+     *
+     * The KulaHub AddForm endpoint expects Contact.Emailsubscribe as a Boolean.
+     * A checkbox or consent field only reports a value when it is ticked, so
+     * presence alone is consent. Every other field type (radio, select, text)
+     * carries the answer in its value, so the value itself is interpreted.
+     */
+    private function get_email_subscribe_value($field, $entry) {
+        $value = $this->get_raw_field_value($field, $entry);
+
+        if ($field['type'] === 'checkbox' || $field['type'] === 'consent') {
+            return !empty($value);
+        }
+
+        return $this->is_truthy_value($value);
+    }
+
+    /**
+     * Interpret a submitted value as a Boolean
+     *
+     * Handles the answers a Gravity Forms opt-in field realistically produces:
+     * "Yes"/"No", "True"/"False", "1"/"0", "On"/"Off" and phrases such as
+     * "No thanks" or "Opt out". An empty value is always false.
+     */
+    private function is_truthy_value($value) {
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        if (is_array($value)) {
+            $value = implode(' ', $value);
+        }
+
+        $normalised = strtolower(trim((string) $value));
+
+        if ($normalised === '') {
+            return false;
+        }
+
+        $negative_values = array(
+            'no', 'n', 'false', '0', 'off', 'none', 'not', 'never', 'nope',
+            'decline', 'declined', 'disagree', 'unsubscribe', 'unsubscribed',
+        );
+
+        if (in_array($normalised, $negative_values, true)) {
+            return false;
+        }
+
+        // Catch phrased answers such as "No thanks" or "Not right now".
+        $words = preg_split('/[^a-z0-9\']+/', $normalised, -1, PREG_SPLIT_NO_EMPTY);
+        $first_word = is_array($words) && !empty($words) ? $words[0] : '';
+
+        if (in_array($first_word, $negative_values, true) || $first_word === 'dont') {
+            return false;
+        }
+
+        if (strpos($normalised, 'opt out') === 0 || strpos($normalised, 'opt-out') === 0) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Render a field value for the debug log without losing its type
+     */
+    private function format_value_for_log($value) {
+        if (is_bool($value)) {
+            return $value ? 'true' : 'false';
+        }
+
+        if (is_array($value)) {
+            return wp_json_encode($value);
+        }
+
+        return (string) $value;
     }
 
     /**
@@ -318,9 +416,9 @@ class KulaHub_GF_Integration {
      */
     private function is_contact_field($field_key) {
         $contact_fields = array(
-            'firstname', 'lastname', 'organisationname', 
-            'address1', 'address2', 'town', 'county', 
-            'postcode', 'country', 'email', 'telephone', 
+            'title', 'firstname', 'lastname', 'organisationname',
+            'address1', 'address2', 'address3', 'town', 'county',
+            'postcode', 'country', 'email', 'telephone',
             'mobile', 'website', 'jobtitle'
         );
 

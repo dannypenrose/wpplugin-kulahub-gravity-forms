@@ -49,7 +49,7 @@ This WordPress plugin integrates [Gravity Forms](https://www.gravityforms.com/) 
 
 ## Installation
 
-1. Download the latest release from the [Releases page](https://github.com/dannypenrose/wpplugin-kulahub-gravity-forms/releases/latest)
+1. Download the latest release from the [Releases page](https://github.com/Converta-Agency/wpplugin-kulahub-gravity-forms/releases/latest)
 2. In your WordPress admin panel, go to Plugins > Add New > Upload Plugin
 3. Upload the downloaded zip file
 4. Activate the plugin
@@ -75,7 +75,7 @@ See the [developer documentation](docs/developer.md) for information about:
 
 ## Support
 
-For support, please [open an issue](https://github.com/dannypenrose/wpplugin-kulahub-gravity-forms/issues) on our GitHub repository.
+For support, please [open an issue](https://github.com/Converta-Agency/wpplugin-kulahub-gravity-forms/issues) on our GitHub repository.
 
 ## License
 

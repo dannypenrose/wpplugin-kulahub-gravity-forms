@@ -1,16 +1,16 @@
 <?php
 /**
  * Plugin Name: KulaHub Integration for Gravity Forms
- * Plugin URI: https://github.com/dannypenrose/wpplugin-kulahub-gravity-forms
+ * Plugin URI: https://github.com/Converta-Agency/wpplugin-kulahub-gravity-forms
  * Description: Integrates Gravity Forms with KulaHub CRM
- * Version: 1.2.0
+ * Version: 1.2.4
  * Author: Danny Penrose
  * Author URI: https://kulahub.com
  * License: GPL v2 or later
  * License URI: http://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain: kulahub-gf
  * Domain Path: /languages
- * GitHub Plugin URI: https://github.com/dannypenrose/wpplugin-kulahub-gravity-forms
+ * GitHub Plugin URI: https://github.com/Converta-Agency/wpplugin-kulahub-gravity-forms
  * Primary Branch: main
  * Requires at least: 5.0
  * Requires PHP: 7.4
@@ -36,7 +36,7 @@ if (!defined('WPINC')) {
 }
 
 // Plugin version.
-define('KULAHUB_GF_VERSION', '1.2.0');
+define('KULAHUB_GF_VERSION', '1.2.4');
 define('KULAHUB_GF_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('KULAHUB_GF_PLUGIN_URL', plugin_dir_url(__FILE__));
 

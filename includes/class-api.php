@@ -159,16 +159,15 @@ class KulaHub_GF_API {
         }
 
         $response_code = wp_remote_retrieve_response_code($response);
-        $response_body = json_decode(wp_remote_retrieve_body($response), true);
+        $raw_body      = wp_remote_retrieve_body($response);
+        $response_body = json_decode($raw_body, true);
 
         error_log('KulaHub GF: API response code: ' . $response_code);
-        error_log('KulaHub GF: API response body: ' . wp_remote_retrieve_body($response));
+        error_log('KulaHub GF: API response body: ' . $raw_body);
 
         if ($response_code !== 200) {
-            $error_message = isset($response_body['message']) 
-                ? $response_body['message'] 
-                : __('Unknown API error', 'kulahub-gf');
-            
+            $error_message = $this->extract_error_message($response_body, $raw_body, $response_code);
+
             $error = new WP_Error(
                 'api_error',
                 $error_message,
@@ -269,6 +268,67 @@ class KulaHub_GF_API {
         return new WP_Error(
             'connection_failed',
             sprintf(__('API connection test failed with status: %s', 'kulahub-gf'), $response_code)
+        );
+    }
+
+    /**
+     * Build a useful error message from an API response
+     *
+     * The KulaHub API reports validation failures as an ASP.NET problem details
+     * document, which has no top level "message" key. Falling straight through
+     * to "Unknown API error" hid the reason a submission was rejected.
+     */
+    private function extract_error_message($response_body, $raw_body, $response_code) {
+        if (is_array($response_body)) {
+            foreach (array('message', 'Message') as $key) {
+                if (!empty($response_body[$key]) && is_string($response_body[$key])) {
+                    return $response_body[$key];
+                }
+            }
+
+            if (!empty($response_body['errors']) && is_array($response_body['errors'])) {
+                $messages = array();
+
+                foreach ($response_body['errors'] as $field => $field_errors) {
+                    $field_errors = is_array($field_errors) ? $field_errors : array($field_errors);
+                    $field_errors = array_filter($field_errors, 'is_scalar');
+
+                    if (empty($field_errors)) {
+                        continue;
+                    }
+
+                    $prefix     = is_string($field) ? $field . ': ' : '';
+                    $messages[] = $prefix . implode(' ', array_map('strval', $field_errors));
+                }
+
+                if (!empty($messages)) {
+                    return implode(' | ', $messages);
+                }
+            }
+
+            foreach (array('title', 'detail', 'error') as $key) {
+                if (!empty($response_body[$key]) && is_string($response_body[$key])) {
+                    return $response_body[$key];
+                }
+            }
+        }
+
+        // Fall back to the raw body (for example a plain text or HTML error page),
+        // trimmed so a full error page never ends up in the log or the admin screen.
+        if (is_string($raw_body) && trim(wp_strip_all_tags($raw_body)) !== '') {
+            $plain_body = trim(preg_replace('/\s+/', ' ', wp_strip_all_tags($raw_body)));
+
+            if (mb_strlen($plain_body) > 300) {
+                $plain_body = mb_substr($plain_body, 0, 300) . '...';
+            }
+
+            return $plain_body;
+        }
+
+        return sprintf(
+            /* translators: %s: HTTP status code returned by the KulaHub API. */
+            __('Unknown API error (HTTP %s)', 'kulahub-gf'),
+            $response_code
         );
     }
 

@@ -5,7 +5,7 @@ Tags: gravity forms, kulahub, crm, integration, forms, automation
 Requires at least: 5.0
 Tested up to: 6.4.3
 Requires PHP: 7.4
-Stable tag: 1.1.3
+Stable tag: 1.2.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -101,6 +101,13 @@ Failed submissions are:
 
 == Changelog ==
 
+= 1.2.4 =
+* Fixed emailsubscribe being sent to the KulaHub API as the string "True" instead of a Boolean, which caused submissions with an opt-in field to be rejected
+* Fixed a "No" answer on an emailsubscribe radio or select field being treated as an opt-in
+* API errors now report the reason returned by KulaHub instead of "Unknown API error"
+* Fixed the title and address3 fields being sent at the top level of the payload instead of inside Contact
+* Corrected the plugin version number, which had been left at 1.2.0 across the 1.2.1 to 1.2.3 releases and caused WordPress to keep offering an update that was already installed
+
 = 1.1.0 =
 * Added comprehensive unit testing suite
 * Implemented GDPR compliance tools
@@ -122,6 +129,9 @@ Failed submissions are:
 * Initial release
 
 == Upgrade Notice ==
+
+= 1.2.4 =
+Required if your forms use an email opt-in field: emailsubscribe is now sent as a Boolean, so those submissions reach KulaHub instead of being rejected.
 
 = 1.1.0 =
 Major update with GDPR compliance, security improvements, and better error handling.
