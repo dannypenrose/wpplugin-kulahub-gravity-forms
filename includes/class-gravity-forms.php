@@ -303,6 +303,10 @@ class KulaHub_GF_Integration {
 
     /**
      * Get field value based on field type
+     *
+     * TODO: the title casing below applies to every non-checkbox field, so it
+     * corrupts postcodes and email addresses. See "Field values are reformatted
+     * with ucwords(strtolower())" in TODO.md.
      */
     private function get_field_value($field, $entry) {
         $value = $this->get_raw_field_value($field, $entry);
@@ -413,6 +417,10 @@ class KulaHub_GF_Integration {
 
     /**
      * Check if field is a contact field
+     *
+     * TODO: the substring match below also catches field IDs that merely
+     * contain a contact field name, such as "coursetitle". See
+     * "is_contact_field() matches field IDs by substring" in TODO.md.
      */
     private function is_contact_field($field_key) {
         $contact_fields = array(

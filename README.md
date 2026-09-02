@@ -73,6 +73,8 @@ See the [developer documentation](docs/developer.md) for information about:
 - Rate limiting
 - Testing
 
+Known issues and deferred work are tracked in [TODO.md](TODO.md).
+
 ## Support
 
 For support, please [open an issue](https://github.com/Converta-Agency/wpplugin-kulahub-gravity-forms/issues) on our GitHub repository.
